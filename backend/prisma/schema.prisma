@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  content   String?  @db.Text
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Post_ibfk_1")
+
+  @@index([authorId], map: "authorId")
+}
+
+model Profile {
+  id     Int     @id @default(autoincrement())
+  bio    String? @db.Text
+  userId Int     @unique(map: "userId")
+  user   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_ibfk_1")
+}
+
+model User {
+  id      Int      @id @default(autoincrement())
+  name    String?  @db.VarChar(255)
+  email   String   @unique(map: "email") @db.VarChar(255)
+  posts   Post[]
+  profile Profile?
+}
+
+model Books {
+  id          Int     @id @default(autoincrement())
+  title       String? @db.VarChar(255)
+  author      String? @db.VarChar(255)
+  year        Int     @db.Year
+  ISBN        String  @unique(map: "ISBN") @db.VarChar(13)
+  cover       String  @db.Text
+  stok        Int 
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryId  Int
+  genre       Genre    @relation(fields: [genreId], references: [id], onDelete: Restrict)
+  genreId     Int
+  detailBook  DetailBook?
+}
+
+model DetailBook {
+  id             Int      @id
+  originaltitle  String?  @db.Text
+  rating         Float?   @default(0)
+  review_count   Int      @default(0)
+  deskripsi      String?  @db.Text
+  pages          Int?
+  language       String?  @db.VarChar(30)
+  tipecover      String?  @db.VarChar(15)
+  format         String?  @db.VarChar(20)
+  pdf_url        String?  @db.VarChar(255) // <— simpan link/path PDF
+  book           Books    @relation(fields: [id], references: [id], onDelete: Cascade)
+  bookId         Int    @unique
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(50)
+  book Books[]
+}
+
+model Genre {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(50)
+  book Books[]
+}
+
