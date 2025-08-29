@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,72 +7,279 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String   @db.VarChar(255)
-  createdAt DateTime @default(now()) @db.Timestamp(0)
-  content   String?  @db.Text
-  published Boolean  @default(false)
-  authorId  Int
-  author    User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Post_ibfk_1")
-
-  @@index([authorId], map: "authorId")
-}
-
-model Profile {
-  id     Int     @id @default(autoincrement())
-  bio    String? @db.Text
-  userId Int     @unique(map: "userId")
-  user   User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_ibfk_1")
-}
-
-model User {
-  id      Int      @id @default(autoincrement())
-  name    String?  @db.VarChar(255)
-  email   String   @unique(map: "email") @db.VarChar(255)
-  posts   Post[]
-  profile Profile?
-}
-
 model Books {
-  id          Int     @id @default(autoincrement())
-  title       String? @db.VarChar(255)
-  author      String? @db.VarChar(255)
-  year        Int     @db.Year
-  ISBN        String  @unique(map: "ISBN") @db.VarChar(13)
-  cover       String  @db.Text
-  stok        Int 
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  categoryId  Int
-  genre       Genre    @relation(fields: [genreId], references: [id], onDelete: Restrict)
-  genreId     Int
-  detailBook  DetailBook?
+  id            Int           @id @default(autoincrement())
+  uuid          String        @unique @default(uuid())
+  title         String?       @db.VarChar(255)
+  author        String?       @db.VarChar(255)
+  year          Int           @db.Year
+  ISBN          String        @unique(map: "ISBN") @db.VarChar(13)
+  cover         String        @db.Text
+  categoryId    Int
+  genreId       Int
+  createdAt     DateTime      @default(now())
+  createdById   Int?
+  deletedAt     DateTime?
+  deletedById   Int?
+  stock         Int           @default(0)
+  updateAt      DateTime?
+  updatedById   Int?
+  pdf_url       String?
+  category      Category      @relation(fields: [categoryId], references: [id], map: "Books_categoryId_fkey")
+  genre         Genre         @relation(fields: [genreId], references: [id], map: "Books_genreId_fkey")
+  createdByUser User?         @relation("createdByUser", fields: [createdById], references: [id])
+  updatedByUser User?         @relation("UpdatedByUser", fields: [updatedById], references: [id])
+  deletedByUser User?         @relation("DeletedByUser", fields: [deletedById], references: [id])
+  detailbook    Detailbook?
+  borrow        Borrow[]
+  reviews       Review[]
+  annotations   Annotation[]
+  wishlist      Wishlist[]
+  likedBook     LikedBook[]
+
+  @@index([categoryId], map: "Books_categoryId_fkey")
+  @@index([createdById], map: "Books_createdById_fkey")
+  @@index([deletedById], map: "Books_deletedById_fkey")
+  @@index([genreId], map: "Books_genreId_fkey")
+  @@index([updatedById], map: "Books_updatedById_fkey")
 }
 
-model DetailBook {
-  id             Int      @id
-  originaltitle  String?  @db.Text
-  rating         Float?   @default(0)
-  review_count   Int      @default(0)
-  deskripsi      String?  @db.Text
-  pages          Int?
-  language       String?  @db.VarChar(30)
-  tipecover      String?  @db.VarChar(15)
-  format         String?  @db.VarChar(20)
-  pdf_url        String?  @db.VarChar(255) // <— simpan link/path PDF
-  book           Books    @relation(fields: [id], references: [id], onDelete: Cascade)
-  bookId         Int    @unique
+model Borrow {
+  id        Int          @id @default(autoincrement())
+  uuid      String       @unique @default(uuid())
+  userId    Int
+  bookId    Int
+  startDate DateTime     @default(now())
+  endDate   DateTime
+  staffId   Int?
+  status    borrowStatus @default(Pending)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
+
+  user  User  @relation("Borrower", fields: [userId], references: [id])
+  book  Books @relation(fields: [bookId], references: [id])
+  staff User? @relation("Approver", fields: [staffId], references: [id])
+}
+
+enum borrowStatus {
+  Pending
+  Active
+  Returned
+  Expired
+  Rejected
+}
+
+model Review {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  rating    Int?
+  comment   String?
+  parentId  Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
+
+  likedReview   LikedReview[]
+
+  user User  @relation(fields: [userId], references: [id])
+  book Books @relation(fields: [bookId], references: [id])
+}
+
+model Annotation {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  page      Int
+  content   String
+  createdAt DateTime  @default(now())
+  user User  @relation(fields: [userId], references: [id])
+  book Books @relation(fields: [bookId], references: [id])
+}
+
+model Wishlist {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
+
+  user User  @relation(fields: [userId], references: [id])
+  book Books @relation(fields: [bookId], references: [id])
+}
+
+model LikedBook {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  createdAt DateTime  @default(now())
+  user User  @relation(fields: [userId], references: [id])
+  book Books @relation(fields: [bookId], references: [id])
+}
+
+model LikedReview {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  reviewId  Int
+  createdAt DateTime  @default(now())
+  user User  @relation(fields: [userId], references: [id])
+  review Review @relation(fields: [reviewId], references: [id])
+}
+
+model Detailbook {
+  id            Int     @id @default(autoincrement())
+  originaltitle String? @db.Text
+  rating        Float?  @default(0)
+  review_count  Int     @default(0)
+  pages         Int?
+  language      String? @db.VarChar(30)
+  bookId        Int     @unique(map: "bookId")
+  description   String? @db.Text
+  books         Books   @relation(fields: [bookId], references: [id], onDelete: NoAction, map: "DetailBook_id_fkey")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
 }
 
 model Category {
-  id   Int    @id @default(autoincrement())
-  name String @unique @db.VarChar(50)
-  book Books[]
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "Category_name_key") @db.VarChar(50)
+  books Books[]
 }
 
 model Genre {
-  id   Int    @id @default(autoincrement())
-  name String @unique @db.VarChar(50)
-  book Books[]
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "Genre_name_key") @db.VarChar(50)
+  books Books[]
 }
 
+model profile {
+  id         Int     @id @default(autoincrement())
+  nim        String?
+  nidn       String?
+  faculty    String?
+  major      String?
+  yearEntry  Int?
+  bio        String? @db.Text
+  profileUrl String?
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
+
+  userId     Int     @unique(map: "userId")
+  user       User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Profile_ibfk_1")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid())
+  name      String    @db.VarChar(255)
+  email     String    @unique(map: "email") @db.VarChar(255)
+  password  String
+  role      userRole  @default(Student)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  profile profile?
+  createdById   Int?
+  createdByUser User? @relation("createdByUser", fields: [createdById], references: [id])
+
+  updatedById   Int?
+  updatedByUser User? @relation("UpdatedByUser", fields: [updatedById], references: [id])
+
+  deletedById   Int?
+  deletedByUser User? @relation("DeletedByUser", fields: [deletedById], references: [id])
+
+  borrows     Borrow[]      @relation("Borrower")
+  approvals   Borrow[]      @relation("Approver")
+  review      Review[]
+  wishlist    Wishlist[]
+  likedBook   LikedBook[]
+  likedReview LikedReview[]
+  annotation  Annotation[]
+
+  booksCreated Books[] @relation("createdByUser")
+  booksUpdated Books[] @relation("UpdatedByUser")
+  booksDeleted Books[] @relation("DeletedByUser")
+
+  userCreated User[] @relation("createdByUser")
+  userUpdated User[] @relation("UpdatedByUser")
+  userDeleted User[] @relation("DeletedByUser")
+
+  borrowCreated Borrow[] @relation("createdByUser")
+  borrowUpdated Borrow[] @relation("UpdatedByUser")
+  borrowDeleted Borrow[] @relation("DeletedByUser")
+
+  reviewCreated Review[] @relation("createdByUser")
+  reviewUpdated Review[] @relation("UpdatedByUser")
+  reviewDeleted Review[] @relation("DeletedByUser")
+
+  wishlistCreated Wishlist[] @relation("createdByUser")
+  wishlistUpdated Wishlist[] @relation("UpdatedByUser")
+  wishlistDeleted Wishlist[] @relation("DeletedByUser")
+
+  detailBookCreated Detailbook[] @relation("createdByUser")
+  detailBookUpdated Detailbook[] @relation("UpdatedByUser")
+  detailBookDeleted Detailbook[] @relation("DeletedByUser")
+ 
+  profileCreated profile[] @relation("createdByUser")
+  profileUpdated profile[] @relation("UpdatedByUser")
+  profileDeleted profile[] @relation("DeletedByUser")
+}
+
+enum userRole {
+  Student
+  Lecturer
+  Librarian
+  Admin
+}

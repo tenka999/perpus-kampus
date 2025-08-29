@@ -1,24 +1,76 @@
 import prisma from "../config/database.js";
 
-export async function getAllDetailBook() {
-    return await prisma.detailBook.findMany();
+async function getAllDetailBook() {
+    return await prisma.detailbook.findMany();
 }
 
-export async function getDetailBook(id) {
-    return await prisma.detailBook.findUnique({
+async function getDetailBookById(id) {
+    console.log(id)
+    return await prisma.detailbook.findUnique({
         where: {
-            id: id
+            bookId: parseInt(id)
+        },
+        
+    });
+}
+
+async function  getDetailBookByDeleted() {
+    return await prisma.detailbook.findMany({
+        where: {
+            deletedAt: {
+                not: null
+            }
         },
         include: {
-            genre: true,
-            category: true
+            deletedByUser: true
         }
     });
 }
 
-export async function createDetailBook(data) {
+async function getDetailBookByExist() {
+    return await prisma.detailbook.findMany({
+        where: {
+            deletedAt: null
+        }
+    })
+}
 
-    const isExist = await prisma.detailBook.count({
+
+async function deleteDetailBookById(id, deletedById) {
+  return await prisma.detailbook.update({
+    where: {
+      id: id,
+    },
+    data: {
+      deletedAt: new Date(),
+      deletedById: deletedById,
+    },
+  });
+}
+
+
+async function updateDetailBook(id, data) {
+    return await prisma.detailbook.update({
+        where: {
+            id: id
+        },
+        data: {
+            originaltitle: data.originaltitle,
+            rating: data.rating,
+            review_count: data.review_count,
+            description: data.description,
+            pages: data.pages,
+            language: data.language,
+            bookId: data.bookId,
+            updatedById: data.updatedById
+
+        }
+    });
+}
+
+async function createDetailBook(data) {
+
+    const isExist = await prisma.detailbook.count({
         where: {
             bookId: data.bookId
         }
@@ -27,18 +79,26 @@ export async function createDetailBook(data) {
     if(isExist) {
         throw new Error("Detail Book already exist");
     }
-    return await prisma.detailBook.create({
+    return await prisma.detailbook.create({
         data: {
             originaltitle: data.originaltitle,
             rating: data.rating,
             review_count: data.review_count,
-            deskripsi: data.deskripsi,
+            description: data.description,
             pages: data.pages,
             language: data.language,
-            tipecover: data.tipecover,
-            format: data.format,
-            pdf_url: data.pdf_url,
             bookId: data.bookId,
+            createdById: data.createdById
         }
     });
+}
+
+export default {
+    getAllDetailBook,
+    getDetailBookById,
+    getDetailBookByDeleted,
+    getDetailBookByExist,
+    deleteDetailBookById,
+    updateDetailBook,
+    createDetailBook
 }

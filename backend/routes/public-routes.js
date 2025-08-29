@@ -1,9 +1,77 @@
-const { getAllBooks } = require("../controllers/book-controller");
-const { loginUser } = require("../controllers/user-login-controller");
-const express = require("express");
-const publicRouter = express.Router();
+import loginUser from "../controllers/user-login-regis-controller.js";
+import express from "express";
+import Books from "../controllers/books-controller.js";
+import detailBookController from "../controllers/detail-book-controller.js";
+import reviewController from "../controllers/review-controller.js";
+import likedBookController from "../controllers/liked-book-controller.js";
+import likedReviewController from "../controllers/liked-review-controller.js";
+import genreController from "../controllers/genre-controller.js";
+import categoryController from "../controllers/category-controller.js";
 
-publicRouter.use("/login", loginUser);
-// publicRouter.get("/buku", getAllBooks  );
+import { Router } from "express";
 
-module.exports = { publicRouter };
+const publicRouter = Router();
+
+//#region Auth
+publicRouter.use("/login", loginUser.loginUser);
+publicRouter.use("/register", loginUser.registerUser);
+//#endregion Auth
+
+//#region Uploads
+publicRouter.use('/coverbook', express.static('uploads/cover-book'));
+publicRouter.use('/pdfbook', express.static('uploads/pdf-book'));
+publicRouter.use('/profilepic', express.static('uploads/profile-pic'));
+//#endregion Uploads
+
+//#region Book
+publicRouter.get('/books',Books.getAll);
+publicRouter.get('/books/deleted',Books.getAllDeleted );
+publicRouter.get('/books/updated',Books.getAllUpdated );
+publicRouter.get("/books/exist", Books.getAllExist);
+publicRouter.get('/books/:id', Books.getOne);
+//#endregion Book
+
+//#region Detail Book
+publicRouter.get("/booksdetail", detailBookController.getAllDetailBook);
+publicRouter.get("/booksdetail/deleted",detailBookController.getDetailBookByDeleted);
+publicRouter.get("/booksdetail/exist", detailBookController.getDetailBookByExist);
+publicRouter.get("/booksdetail/:id", detailBookController.getOneDetailBook);
+//#endregion Detail Book
+
+//#region Review
+publicRouter.get("/reviews", reviewController.getAllReview);
+publicRouter.get("/reviews/book/:bookId", reviewController.getAllReviewByBookId);
+publicRouter.get("/reviews/user/:userId", reviewController.getReviewByUserId);
+publicRouter.get("/reviews/parent/:parentId", reviewController.getAllReviewByParentId);
+publicRouter.get("/reviews/exist", reviewController.getReviewByExist);
+publicRouter.get("/reviews/deleted", reviewController.getAllReviewDeleted);
+publicRouter.get("/reviews/:id", reviewController.getReviewById);
+//#endregion Review
+
+//#region Liked Book
+publicRouter.get("/liked-books", likedBookController.getAllLikedBook);
+publicRouter.get("/liked-books/:id", likedBookController.getLikedBookById);
+publicRouter.get("/liked-books/user/:id", likedBookController.getTotalLikedByUser);
+publicRouter.get("/liked-books/book/:id", likedBookController.getTotalLikedByBook);
+publicRouter.post("/liked-books/toggle", likedBookController.toggleLikeBook);
+//#endregion Liked Book
+
+//#region Liked Review
+publicRouter.get("/liked-reviews", likedReviewController.getAllLikeReview);
+publicRouter.get("/liked-reviews/:id", likedReviewController.getLikedReviewById);
+publicRouter.get("/liked-reviews/user/:id", likedReviewController.getTotalLikedReviewByUser);
+publicRouter.get("/liked-reviews/book/:id", likedReviewController.getTotalLikedReviewByBook);
+publicRouter.post("/liked-reviews/toggle", likedReviewController.toggleLikeReview);
+//#endregion Liked Review
+
+//#region Genre
+publicRouter.get("/genres", genreController.getGenre);
+publicRouter.get("/genres/:id", genreController.getGenreById);
+//#endregion Genre
+
+//#region Category
+publicRouter.get("/categories", categoryController.getCategory);
+publicRouter.get("/categories/:id", categoryController.getCategoryById);
+//#endregion Category
+
+export default  publicRouter;   
